@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Furniture Shop</title>
+<style>
+:root{--bg:#eef2f0;--card:#fff;--ink:#16302b;--mute:#5b6f6a;--accent:#0f6b5c;--accent-ink:#fff;--line:#d3dedb;--wa:#1f9d55;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a18;--card:#182623;--ink:#e7f1ee;--mute:#9bb2ac;--accent:#46c2ad;--accent-ink:#06211c;--line:#2a3d39;--wa:#2ec16e}}
+:root[data-theme="dark"]{--bg:#101a18;--card:#182623;--ink:#e7f1ee;--mute:#9bb2ac;--accent:#46c2ad;--accent-ink:#06211c;--line:#2a3d39;--wa:#2ec16e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+header{padding:18px 16px 8px;max-width:960px;margin:0 auto}
+h1{margin:0;font-size:24px;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--mute);font-size:14px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;padding:8px 0 10px;max-width:960px;margin:0 auto}
+input{width:calc(100% - 32px);margin:0 16px 8px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:var(--card);color:var(--ink)}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:0 16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:8px 14px;border:1px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);font-size:14px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:6px 16px 32px;max-width:960px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.car{position:relative}
+.slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.slides::-webkit-scrollbar{display:none}
+.slides img{flex:none;width:100%;aspect-ratio:4/3;object-fit:cover;scroll-snap-align:center;display:block}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;pointer-events:none}
+.dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.55)}
+.dots i.on{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.sold{position:absolute;top:10px;left:10px;background:#b3261e;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.cat{font-size:13px;color:var(--mute)}
+.name{font-size:16px;font-weight:600}
+.price{font-size:22px;font-weight:700;color:var(--accent);margin-top:2px}
+.wa{margin-top:auto;display:block;text-align:center;text-decoration:none;background:var(--wa);color:#fff;font-weight:600;padding:11px;border-radius:10px;font-size:15px}
+.wa.off{background:var(--line);color:var(--mute);pointer-events:none}
+.stock{font-size:13px;color:var(--mute)}
+.rsv{background:#b26a00}
+.card.gone .slides{opacity:.5}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:40px 0}
+</style>
+</head>
+<body>
+<header><h1>Furniture Shop</h1><p>Swipe photos, tap a category, message us on WhatsApp.</p></header>
+<div class="bar"><input id="q" type="search" placeholder="Search items or item number" aria-label="Search items"><div class="tabs" id="tabs"></div></div>
+<main id="grid"></main>
+<script>
+// ===== SETTINGS: change the number here (country code + number, no + or spaces) =====
+var WHATSAPP = "917872585044";
+
+// Paste your Google Sheet "published CSV" link between the quotes. Leave empty to show sample items.
+var SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOD84n8gLSCFIZ2ihu54NabPALtBBQUZo-oGj65W2TaH-Dy78JZounHiwF5sI0I6YOA4kNRkaLxQmd/pub?gid=10585162&single=true&output=csv";
+
+// ===== ITEMS: one line per item. status is "Available" or "Sold". =====
+// photos are sample colour placeholders; real photos replace the last three values.
+var ITEMS = [
+ {cat:"Almari",name:"3-door steel almari, brown",price:12500,status:"Available",c:"#8a5a3b"},
+ {cat:"Almari",name:"2-door wooden almari with mirror",price:9800,status:"Available",c:"#a06b45"},
+ {cat:"Almari",name:"Godrej-type steel almari, grey",price:7500,status:"Sold",c:"#6f7d85"},
+ {cat:"Bookshelf",name:"5-shelf open bookshelf, teak",price:3200,status:"Available",c:"#b07d4f"},
+ {cat:"Bookshelf",name:"Wall-mount small bookshelf",price:1400,status:"Available",c:"#7d5a3c"},
+ {cat:"Table",name:"6-seater dining table, sheesham",price:15000,status:"Available",c:"#6b4a2f"},
+ {cat:"Table",name:"Study table with drawer",price:3800,status:"Available",c:"#9a7048"},
+ {cat:"Chair",name:"Wooden chair, cushion seat (set of 4)",price:4800,status:"Available",c:"#8c6a45"},
+ {cat:"Chair",name:"Office chair, high back",price:2600,status:"Available",c:"#3f4a52"},
+ {cat:"Bed",name:"Queen size bed, box storage",price:18000,status:"Available",c:"#7a4e34"},
+ {cat:"Bed",name:"Single bed, wooden frame",price:6500,status:"Available",c:"#a2784f"},
+ {cat:"Dressing Table",name:"Dressing table with big mirror",price:5500,status:"Available",c:"#b58863"}
+];
+
+// Set to true to hide sold-out items completely.
+var HIDE_SOLD = false;
+function isSold(i){return i.qty!=null?i.qty<=0:i.status==="Sold";}
+function stockText(i){var q=i.qty!=null?i.qty:(isSold(i)?0:2);return q<=0?"Sold out":(q===1?"Only 1 left":q+" available");}
+
+var state={cat:"All",q:""};
+var tabsEl=document.getElementById("tabs"),grid=document.getElementById("grid"),qEl=document.getElementById("q");
+
+function ph(label,color,n){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="'+color+'"/><text x="400" y="290" font-family="sans-serif" font-size="44" fill="#fff" text-anchor="middle">'+label.replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</text><text x="400" y="350" font-family="sans-serif" font-size="30" fill="#ffffffcc" text-anchor="middle">Photo '+n+'</text></svg>';
+  return "data:image/svg+xml;utf8,"+encodeURIComponent(svg);
+}
+function fmt(n){return "\u20B9"+Number(n).toLocaleString("en-IN");}
+function el(t,c,txt){var e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e;}
+
+function buildTabs(){
+  var cats=["All"];
+  ITEMS.forEach(function(i){if(cats.indexOf(i.cat)<0)cats.push(i.cat);});
+  tabsEl.textContent="";
+  cats.forEach(function(c){
+    var b=el("button","tab",c);b.setAttribute("aria-pressed",String(c===state.cat));
+    b.onclick=function(){state.cat=c;buildTabs();render();};
+    tabsEl.appendChild(b);
+  });
+}
+
+function card(it){
+  var d=el("article","card"),car=el("div","car"),sl=el("div","slides");
+  var photos=it.photos&&it.photos.length?it.photos:[ph(it.cat,it.c,1),ph(it.cat,it.c,2),ph(it.cat,it.c,3)];
+  photos.forEach(function(p){var im=new Image();im.src=p;im.alt=it.name;im.loading="lazy";sl.appendChild(im);});
+  car.appendChild(sl);
+  if(photos.length>1){
+    var dots=el("div","dots");photos.forEach(function(_,k){dots.appendChild(el("i",k?"":"on"));});
+    car.appendChild(dots);
+    sl.addEventListener("scroll",function(){
+      var k=Math.round(sl.scrollLeft/sl.clientWidth);
+      Array.prototype.forEach.call(dots.children,function(x,j){x.className=j===k?"on":"";});
+    },{passive:true});
+  }
+  var gone=isSold(it);
+  if(gone){car.appendChild(el("span","sold","Sold out"));d.className+=" gone";}
+  else if(it.reserved)car.appendChild(el("span","sold rsv","Reserved"));
+  var b=el("div","body");
+  b.appendChild(el("div","cat",(it.id?"Item #"+it.id+" - ":"")+it.cat));
+  b.appendChild(el("div","name",it.name));
+  b.appendChild(el("div","price",fmt(it.price)));
+  b.appendChild(el("div","stock",stockText(it)));
+  var a=el("a","wa",gone?"Sold out":"Message on WhatsApp");
+  if(gone)a.className="wa off";
+  else{a.href="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent("Hi, I am interested in item #"+(it.id||"")+": "+it.name+" ("+fmt(it.price)+")");a.target="_blank";a.rel="noopener";}
+  b.appendChild(a);
+  d.appendChild(car);d.appendChild(b);return d;
+}
+
+function render(){
+  var q=state.q.trim().toLowerCase().replace(/^#/,"");
+  var list=ITEMS.filter(function(i){
+    return (state.cat==="All"||i.cat===state.cat)&&!(HIDE_SOLD&&isSold(i))&&(!q||(i.name+" "+i.cat+" "+(i.id||"")).toLowerCase().indexOf(q)>=0);
+  });
+  list=list.map(function(x,k){return [x,k];}).sort(function(a,b){return (isSold(a[0])-isSold(b[0]))||a[1]-b[1];}).map(function(x){return x[0];});
+  grid.textContent="";
+  if(!list.length){grid.appendChild(el("div","empty","No items found. Try another category or word."));return;}
+  list.forEach(function(i){grid.appendChild(card(i));});
+}
+qEl.addEventListener("input",function(){state.q=qEl.value;render();});
+function parseCSV(t){
+  var rows=[],r=[],f="",q=false;
+  for(var i=0;i<t.length;i++){
+    var c=t[i];
+    if(q){ if(c=='"'){ if(t[i+1]=='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c=='"')q=true;
+    else if(c==","){r.push(f);f="";}
+    else if(c=="\n"){r.push(f);rows.push(r);r=[];f="";}
+    else if(c!="\r")f+=c;
+  }
+  if(f||r.length){r.push(f);rows.push(r);}
+  return rows;
+}
+function load(){
+  if(!SHEET_CSV){ITEMS.forEach(function(x,k){x.id=String(k+1);x.qty=x.status==="Sold"?0:(k%4===0?1:2);});buildTabs();render();return;}
+  grid.appendChild(el("div","empty","Loading items..."));
+  fetch(SHEET_CSV).then(function(r){return r.text();}).then(function(t){
+    var rows=parseCSV(t),h=rows.shift().map(function(x){return x.trim().toLowerCase();});
+    function col(n){return h.indexOf(n);}
+    var ii=col("id"),ic=col("category"),inm=col("name"),ip=col("price"),iq=col("quantity"),ir=col("reserved"),ph=[col("photo 1"),col("photo 2"),col("photo 3")];
+    ITEMS=rows.filter(function(r){return r[inm]&&r[inm].trim();}).map(function(r){
+      return {id:(r[ii]||"").trim(),cat:(r[ic]||"Other").trim(),name:r[inm].trim(),price:Number((r[ip]||"0").replace(/[^0-9.]/g,"")),
+        qty:Number((r[iq]||"0").replace(/[^0-9]/g,"")),reserved:/^y/i.test(r[ir]||""),c:"#8a5a3b",
+        photos:ph.map(function(k){return k>=0&&r[k]?r[k].trim():"";}).filter(Boolean)};
+    });
+    buildTabs();render();
+  }).catch(function(){grid.textContent="";grid.appendChild(el("div","empty","Could not load items. Please try again."));});
+}
+load();
+</script>
+</body>
+</html>
